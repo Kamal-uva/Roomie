@@ -52,8 +52,19 @@ if p_kind='trash' and p_member_id<>auth.uid() then raise exception 'You can only
 if p_kind='vacuum' then
 perform 1 from public.rooms where id=rid for update;
 select rm.user_id into expected from public.room_members rm where rm.room_id=rid order by rm.joined_at,rm.user_id limit 1;
-select coalesce((select rm2.user_id from public.room_members rm2 where rm2.room_id=rid and (rm2.joined_at,rm2.user_id)>(lastm.joined_at,lastm.user_id) order by rm2.joined_at,rm2.user_id limit 1),expected) into expected
-from(select rm.joined_at,rm.user_id from public.activity a join public.room_members rm on rm.user_id=a.member_id and rm.room_id=a.room_id where a.room_id=rid and a.kind='vacuum' order by a.created_at desc,a.id desc limit 1) lastm;
+-- A scalar subquery preserves the first roommate when no vacuum log exists.
+select coalesce((
+  select rm2.user_id from public.room_members rm2
+  join public.room_members lastm on lastm.room_id=rid
+  where lastm.user_id=(
+    select a.member_id from public.activity a
+    where a.room_id=rid and a.kind='vacuum'
+    order by a.created_at desc,a.id desc limit 1
+  )
+  and rm2.room_id=rid
+  and (rm2.joined_at,rm2.user_id)>(lastm.joined_at,lastm.user_id)
+  order by rm2.joined_at,rm2.user_id limit 1
+),expected) into expected;
 if p_member_id is distinct from expected then raise exception 'Vacuum turn changed, refresh';end if;
 end if;
 insert into public.activity(room_id,kind,member_id,actor_id) values(rid,p_kind,p_member_id,auth.uid());
