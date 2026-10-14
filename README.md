@@ -22,3 +22,9 @@ Use the **public publishable/anon key**, never the service-role/secret key. Keep
 ## Notes
 
 Laundry must be marked free manually when finished. The vacuum turn is rotated by join order. There are no push notifications or timed wash-cycle alerts. All changes are stored in Supabase; users can see updated activity with realtime subscriptions or a page refresh.
+
+## Updating an existing Roomie database (October 2026)
+
+For existing apartments, run only `supabase/migrations/20261013_fix_vacuum_rotation.sql` in Supabase's SQL Editor. Do not rerun `supabase/schema.sql`: it is for fresh databases. The migration replaces the vacuum logging function and preserves existing roommates and activity.
+
+After the migration, deploy the updated frontend. Run `npm test` for vacuum rotation unit tests and `npm run build` to verify the production bundle.
