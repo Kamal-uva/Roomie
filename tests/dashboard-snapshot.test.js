@@ -29,3 +29,9 @@ test('snapshot retains latest chore entries independently of 100-entry history c
   assert.match(sql, /kind = 'trash'/);
   assert.match(sql, /kind = 'vacuum'/);
 });
+
+test('frontend uses snapshot with fallback when RPC is not installed', () => {
+  assert.match(app, /supabase\.rpc\('get_room_dashboard',\{p_room_id:id\}\)/);
+  assert.match(app, /\['PGRST202','42883'\]\.includes\(snap\.error\.code\)/);
+  assert.match(app, /if\(!snap\.error\)/);
+});
